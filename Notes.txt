@@ -1,0 +1,74 @@
+To create a virtual environment - 
+1- Go into the repositrty 
+2- python -m venv venv
+3- .\venv\scripts\activate
+
+To download all requirements libraries -
+pip install -r requirements.txt 
+
+To get started with the project -
+django-admin startproject cfehome
+
+To run the project 
+python manage.py runserver 8000
+
+To create an app
+python manage.py startapp api
+Django projects are made of apps — each app handles a specific piece of functionality
+Inside your project directory, Django will create a folder called api/ with files
+models.py → define database models (e.g., User, Post, etc.)
+views.py → handle HTTP requests (return JSON, HTML, etc.)
+urls.py (not auto-created, but you usually add it) → define URL routes for this app
+admin.py → register models so they appear in Django’s admin panel
+apps.py → app configuration (Django uses it internally)
+migrations/ → auto-generated files that describe changes to your database schema
+
+
+For each app, we create the models inside models.py. Now after create the models we made django know abou the model that need to be introduced for the database 
+python manage.py makemigrations
+python manage.py migrate -> this makes sure databse does actually change based on the model
+
+
+🔹 What is the Django shell?
+-python manage.py shell
+The Django shell is just like the normal Python interactive shell, but with your Django project already loaded.
+This runs a Python interpreter where:
+- Django settings are loaded.
+- Your apps and models are available.
+- You can directly interact with your database and project code.
+🔹 What it does
+-Imports Django environment (settings, installed apps).
+-Lets you test queries, models, functions, serializers, etc.
+-Executes code inside the context of your Django project.
+
+Django ORM 
+- Django ORM (Object-Relational Mapper) is a powerful feature of the Django web framework that allows you to interact with a database
+using Python code instead of writing raw SQL queries.
+- Instead of thinking in terms of tables and SQL, you think in terms of Python classes and objects. Django then automatically translates
+those Python instructions into database queries.
+Key Concepts
+1.Models
+In Django, you define your database schema as Python classes (called models).
+Each model maps to a database table, and each attribute of the model represents a column.
+example : 
+from django.db import models
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    author = models.CharField(max_length=100)
+    published_date = models.DateField()
+
+Django ORM lets you use Pythonic queries instead of writing SQL:
+# Insert data
+Book.objects.create(title="1984", author="George Orwell", published_date="1949-06-08")
+# Get all records
+books = Book.objects.all()
+# Filter
+orwell_books = Book.objects.filter(author="George Orwell")
+# Update
+book = Book.objects.get(id=1)
+book.title = "Animal Farm"
+book.save()
+# Delete
+book.delete()
+
+
