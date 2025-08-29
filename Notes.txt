@@ -72,3 +72,159 @@ book.save()
 book.delete()
 
 
+
+🔹 What are Django Forms?
+A Form in Django is a Python class that maps to an HTML form.
+It lets you:
+-Define what fields you expect from the user.
+-Validate the input automatically.
+-Convert it into Python types (int, bool, datetime, etc.).
+
+forms.py
+from django import forms
+
+class ContactForm(forms.Form):
+    name = forms.CharField(max_length=100)
+    email = forms.EmailField()
+    message = forms.CharField()
+
+Using form in view : 
+from .forms import ContactForm
+
+def contact_view(request):
+    if request.method == "POST":
+        form = ContactForm(request.POST)   # bind data from request
+        if form.is_valid():
+            # cleaned data is safe to use
+            name = form.cleaned_data['name']
+            email = form.cleaned_data['email']
+            message = form.cleaned_data['message']
+            print(name, email, message)
+            # Do something (save to DB, send email, etc.)
+
+
+Forms vs ModelForms
+Form → you define fields manually (like ContactForm).
+ModelForm → automatically builds a form from a Django model.
+from django import forms
+from .models import Student
+
+class StudentForm(forms.ModelForm):
+    class Meta:
+        model = Student
+        fields = ['name', 'age']   # or use "__all__"
+
+🔹 form.data
+This is the raw input data (usually from request.POST).
+Always contains strings, straight from the user/browser, before validation.
+Django doesn’t modify it.
+Example:
+form = ContactForm({"name": "Ali", "age": "20"})
+print(form.data)  
+# {'name': 'Ali', 'age': '20'}   ← still a string!
+
+🔹 form.cleaned_data
+This is created only after you call form.is_valid().
+Contains validated and type-converted values.
+Only the fields that passed validation appear here.
+Example:
+if form.is_valid():
+    print(form.cleaned_data)
+    # {'name': 'Ali', 'age': 20}   ← int now, not string 
+
+Another form.py example : 
+# forms.py
+from django import forms
+from django.core.validators import MinLengthValidator
+
+class ContactForm(forms.Form):
+    name = forms.CharField(
+        max_length=100,
+        validators=[MinLengthValidator(2)],
+    )
+    email = forms.EmailField()
+    message = forms.CharField(
+        max_length=1000,
+        strip=True,              # trims leading/trailing spaces
+    )
+    agree = forms.BooleanField(required=True)  # must be checked/True
+
+    # Field-level validation
+    def clean_name(self):
+        name = self.cleaned_data["name"].strip()
+        if any(char.isdigit() for char in name):
+            raise forms.ValidationError("Name cannot contain numbers.")
+        return name
+
+    # Object-level (cross-field) validation
+    def clean(self):
+        cleaned = super().clean()
+        email = cleaned.get("email")
+        message = cleaned.get("message")
+
+        if email and email.endswith("@example.com"):
+            raise forms.ValidationError("Please use a non-example email domain.")
+
+        if message and len(message.split()) < 3:
+            self.add_error("message", "Message is too short — add more details.")
+        return cleaned
+
+
+# Optional: ModelForm example (still backend-only)
+# Validates according to your model + extra rules you add here.
+from .models import Student
+
+class StudentForm(forms.ModelForm):
+    class Meta:
+        model = Student
+        fields = ["name", "age"]
+
+    def clean_age(self):
+        age = self.cleaned_data["age"]
+        if age < 0:
+            raise forms.ValidationError("Age cannot be negative.")
+        return age
+
+#serializers
+
+Now let say we add a property discount to our model product, 
+now if we do something like product.objects.first().sale_price -> in this case we will get our sale price for the product, however if we want that sale price when we make a get 
+request for the product, so for this let say we add the sale_price as field to the model_to_dict, then we will not get the sale price
+this is because sale_price is a computed property and model_to_dict() will not include it.
+so for this, we have to manually add this property.
+
+
+Instance method vs property 
+An instance method is just a normal method defined on your model class.
+-It requires you to call it with parantheses.
+-Can take arguments (other than self).
+-Can run any arbitrary logic.
+A property lets you expose a method’s return value as if it were an attribute.
+-No parentheses when accessing.
+-Cannot take arguments (other than self).
+-Makes computed values “look like” fields.
+
+
+In Django REST Framework (DRF), a serializer is the component that helps convert between complex Python objects (like Django models) 
+and primitive types (like dicts, lists, JSON).
+🔹 What a Serializer Does
+- Serialization (Python → JSON)
+Converts Django model instances or querysets into Python primitives (dicts, lists), which can then be rendered into JSON
+-Serializers include validation methods to enforce rules on incoming data (like form validation in Django).
+-Deserialization (JSON → Python / DB)
+Takes JSON (or other primitive data) and converts it into complex Python objects (usually model instances). Also validates that the input data is correct.
+Example : 
+data = {'title': '1984', 'author': 'George Orwell', 'published_date': '1949-06-08'}
+serializer = BookSerializer(data=data)
+
+if serializer.is_valid():
+    book = serializer.save()   # creates a new Book instance
+    print(book.id)
+else:
+    print(serializer.errors)
+
+When serializer.save() Saves to DB
+If you used the serializer with data=... (i.e. deserialization mode), and after calling .is_valid(), then .save() will either:
+Create a new object if no instance was passed, or
+Update an existing object if an instance was passed.
+If you wrote a custom serializer (not a ModelSerializer) and didn’t implement create()/update(), then .save() won’t know how to persist — you’d have to define that.
