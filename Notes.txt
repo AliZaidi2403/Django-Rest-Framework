@@ -228,3 +228,31 @@ If you used the serializer with data=... (i.e. deserialization mode), and after 
 Create a new object if no instance was passed, or
 Update an existing object if an instance was passed.
 If you wrote a custom serializer (not a ModelSerializer) and didn’t implement create()/update(), then .save() won’t know how to persist — you’d have to define that.
+
+serializers in Django REST Framework handle data at different “stages” depending on whether you’re serializing (Python → JSON) or deserializing (JSON → Python objects).
+1. serializer.data - The final serialized representation (ready for JSON output). use this when returning API responses.
+book = Book.objects.first()
+serializer = BookSerializer(book)
+print(serializer.data)
+2. serializer.validated_data - The cleaned & validated input data. JSON input → validated Python dict.
+if serializer.is_valid():
+    print(serializer.validated_data)
+3. serializer.initial_data - The raw input data before validation.
+data = {"title": "1984", "author": "George Orwell"}
+serializer = BookSerializer(data=data)
+print(serializer.initial_data)
+# {'title': '1984', 'author': 'George Orwell'}
+4. serializer.errors - Holds validation errors.
+Available when: After calling is_valid() if validation fails.
+🔹 Lifecycle of data in a Serializer
+Input from client → serializer.initial_data
+Call .is_valid()
+Validation runs.
+On success → serializer.validated_data
+On failure → serializer.errors
+Call .save() → creates/updates a model instance.
+When serializing:
+Model instance → serializer.data → JSON.
+
+serializer.save() takes everything from serializer.validated_data and passes it into your model’s create() (or update()).
+
